@@ -166,10 +166,11 @@ h1 { font-size: 17px; margin: 5px 0 0; font-weight: 500; }
   min-height: 44px;
   margin-top: 10px;
 }
-.composer-area { width: min(100%, 860px); margin: 0 auto; padding: 8px 40px 20px; }
+.composer-area { flex: 0 0 auto; max-height: 55%; overflow-y: auto; width: min(100%, 860px); margin: 0 auto; padding: 8px 40px 20px; }
 #status { margin: 0 0 8px; color: var(--clay); font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
 #status:empty, #live-transcript:empty { display: none; }
-.live-transcript { font-size: 15px; line-height: 1.5; color: var(--muted); margin: 0 0 10px; overflow-wrap: anywhere; }
+.live-transcript { max-height: 6rem; overflow-y: auto; overscroll-behavior: contain; white-space: pre-wrap; font-size: 14px; line-height: 1.5; color: var(--muted); margin: 0 0 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); overflow-wrap: anywhere; }
+.live-transcript:focus-visible { outline: 3px solid var(--clay); outline-offset: 2px; }
 #voice-status-details { font-size: 13px; margin-bottom: 10px; }
 #voice-status-detail { margin: 6px 0; overflow-wrap: anywhere; }
 #composer { display: flex; flex-direction: column; gap: 10px; }

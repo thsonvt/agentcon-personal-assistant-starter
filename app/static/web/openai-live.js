@@ -86,7 +86,9 @@
         }
         await run.peer.setRemoteDescription({type: 'answer', sdp: result.transport.sdp});
         if (!this._current(run)) return;
-        run.expiryTimer = setTimeout(() => this._fail(run, 'This five-minute voice session ended. Start again to continue.'), 5 * 60 * 1000);
+        run.expiryTimer = setTimeout(() => {
+          if (this._current(run)) this._end(run, 'The five-minute voice limit was reached. Start conversation to continue.', 'idle');
+        }, 5 * 60 * 1000);
         run.authTimer = setInterval(async () => {
           if (!this._current(run) || run.authPending) return;
           run.authPending = true;
@@ -124,7 +126,10 @@
       } catch (_) { this._fail(run, 'Voice sent an invalid response. Your saved conversation is still available.'); return; }
       if (event.type === 'session.closed') {
         run.finalized = true;
-        if (this._current(run)) this._end(run, 'Conversation ended.', 'idle');
+        const reason = event.reason === 'expired' ? 'The voice session reached its time limit. Start conversation to continue.' :
+          event.reason === 'connection_lost' ? 'The voice connection was lost. Check your conversation before restarting.' :
+            'The voice service ended this session. Start conversation to continue.';
+        if (this._current(run)) this._end(run, reason, event.reason === 'connection_lost' ? 'error' : 'idle');
         this._cleanup(run);
         return;
       }
@@ -266,7 +271,7 @@
       })();
       return run.stopPromise;
     }
-    stop() {
+    stop(reason = 'Conversation stopped.') {
       const run = this.run;
       if (!run) return Promise.resolve();
       if (run.ending && !run.stopAccepted) {
@@ -274,7 +279,7 @@
           if (stopped && this.run === run) this._set('idle', 'The voice session is stopped.');
         });
       }
-      return this._end(run, 'Conversation stopped.', 'idle');
+      return this._end(run, reason, 'idle');
     }
     _end(run, message, phase) {
       if (run.ending) return run.done;

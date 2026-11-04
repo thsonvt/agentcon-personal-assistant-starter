@@ -154,5 +154,12 @@ async function ready(env) { await env.controller.start(); const channel=env.peer
   assert.equal(env.controller.phase,'idle','confirmed server hangup is a normal Stop even when final usage event is absent');
   assert.equal(env.track.stopped,true);assert.equal(env.peers[0].closed,true);assert.equal(env.controller.needsStop,false);
   assert.notEqual(env.controller.run.finalized,true,'HTTP hangup does not pretend the final usage event was observed');
+  env=setup();channel=await ready(env);
+  env.controller.stop('Voice stopped when you left this tab. Start conversation to continue.');
+  channel.event({type:'session.closed'});await tick();
+  assert.match(env.statuses.at(-1).message,/left this tab/,'intentional tab stop preserves its explanation');
+  env=setup();channel=await ready(env);
+  channel.event({type:'session.closed',reason:'expired'});await tick();
+  assert.match(env.statuses.at(-1).message,/time limit/,'provider expiry is visible instead of silently resetting the button');
   console.log('OpenAI Live: media lifecycle, transcript delegation, replay protection, and failure handling passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});

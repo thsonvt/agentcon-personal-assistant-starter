@@ -7,6 +7,11 @@
   const status = el('status'), messages = el('messages'), stopAudio = el('stop-audio');
   const conversationButton = el('handsfree');
   const textEntry = el('text-entry'), textToggle = el('toggle-text');
+  function updateScrollRegion(region, update) {
+    const follow = region.scrollHeight - region.scrollTop - region.clientHeight <= 24;
+    update();
+    if (follow) region.scrollTop = region.scrollHeight;
+  }
   function typing(show) {
     if (!textEntry || !textToggle) return;
     textEntry.hidden = !show;
@@ -187,8 +192,8 @@
         const current = await request('/api/web/state');
         if (!current.ready) throw new Error('Sign in to continue.');
       },
-      status: (phase, message) => {
-        const labels = {starting: 'Connecting…', listening: 'Listening', thinking: 'Thinking…', preparing: 'Preparing reply…', speaking: 'Pippa is speaking', stopping: 'Finishing voice session…', idle: ''};
+      status: (phase, message) => updateScrollRegion(el('chat-scroll'), () => {
+        const labels = {starting: 'Connecting…', listening: 'Listening', thinking: 'Thinking…', preparing: 'Preparing reply…', speaking: 'Pippa is speaking', stopping: 'Finishing voice session…', idle: openAILive ? message : ''};
         status.textContent = phase === 'error' ? (message.includes('permission') ? 'Microphone blocked. Check permissions.' : message.includes('sign-in') ? 'Sign in again to use voice.' : 'Voice disconnected. Tap Start to retry.') : labels[phase] ?? message;
         const details = el('voice-status-details'), detail = el('voice-status-detail');
         if (details && detail) { details.hidden = phase !== 'error'; detail.textContent = phase === 'error' ? message : ''; }
@@ -196,8 +201,11 @@
         if ((!openAILive && phase !== 'listening') || ['idle', 'error'].includes(phase)) el('live-transcript').textContent = '';
         stopAudio.hidden = !['preparing', 'speaking'].includes(phase);
         controls();
-      },
-      transcript: text => { el('live-transcript').textContent = text; },
+      }),
+      transcript: text => updateScrollRegion(el('chat-scroll'), () => {
+        const captions = el('live-transcript');
+        updateScrollRegion(captions, () => { captions.textContent = text; });
+      }),
     });
   }
   conversationButton.addEventListener('click', async () => {
@@ -281,7 +289,7 @@
     stopPlayback(); status.textContent = '';
   });
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden && handsFree?.active) handsFree.stop();
+    if (document.hidden && handsFree?.active) handsFree.stop('Voice stopped when you left this tab. Start conversation to continue.');
   });
   window.addEventListener('pagehide', () => {
     if (handsFree?.active) handsFree.stop();

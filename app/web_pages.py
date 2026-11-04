@@ -42,7 +42,7 @@ def render_web_page(data):
 <ol id="messages" class="messages" aria-label="Conversation"></ol></div>
 <section class="composer-area" aria-label="Talk to Pippa"><p id="status" role="status" aria-live="polite"></p>
 <details id="voice-status-details" hidden><summary>Connection details</summary><p id="voice-status-detail"></p></details>
-<p id="live-transcript" class="live-transcript" aria-live="polite"></p>
+<p id="live-transcript" class="live-transcript" role="region" aria-label="Live captions" aria-live="polite" tabindex="0"></p>
 <button id="refresh" class="play" type="button" hidden>Refresh conversation</button>
 <form id="composer">
 <div class="voice-actions"><button id="handsfree" type="button" aria-pressed="false">Start conversation</button><button id="stop-audio" type="button" hidden>Stop audio</button><button id="toggle-text" type="button" aria-expanded="true" aria-controls="text-entry">Type a message</button></div>
