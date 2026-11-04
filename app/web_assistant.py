@@ -195,6 +195,7 @@ class WebAssistant:
             if not user:
                 return RedirectResponse('/signin', status_code=303, headers=HEADERS)
             data = dict(name=user.first_name, email=user.email, csrf_token=session['csrf'],
+                        local_calendar=getattr(self.connections, 'workshop_calendar', False),
                         ready=self._ready(user), voice=dict(stt=self.voice.stt_enabled, tts=self.voice.tts_enabled))
             return HTMLResponse(render_web_page(data), headers=HEADERS)
 

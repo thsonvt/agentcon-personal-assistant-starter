@@ -271,6 +271,39 @@ summary { cursor: pointer; }
   .voice-help { margin-top: 0; }
 }
 
+.workshop-scroll { flex: 1; min-height: 0; overflow: auto; padding: 40px; }
+.workshop-panel { max-width: 960px; margin: 0 auto; }
+.workshop-heading { margin: 12px 0 32px; }
+.workshop-heading .pippa-mark { width: 46px; height: 46px; margin: 0 0 20px; }
+.workshop-heading h2 { font: clamp(30px, 4vw, 46px)/1.15 Georgia, serif; letter-spacing: -1px; margin: 14px 0; }
+.workshop-content { line-height: 1.65; }
+.workshop-content section { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin: 20px 0; }
+.workshop-content h2 { font-size: 19px; font-weight: 600; margin: 0 0 12px; }
+.workshop-content p { overflow-wrap: anywhere; }
+.workshop-content .workshop-lead { color: var(--muted); font-size: 18px; max-width: 640px; }
+.workshop-content code { background: var(--soft); border-radius: 4px; padding: 2px 5px; overflow-wrap: anywhere; }
+.workshop-content .muted { color: var(--muted); font-size: 14px; }
+.workshop-content button, .workshop-content .button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 22px; border: 0; border-radius: 12px; background: var(--clay); color: white; font: inherit; text-decoration: none; }
+.workshop-content label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.workshop-content input { max-width: 100%; min-height: 48px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: inherit; color: var(--ink); }
+.workshop-content input:focus-visible { outline: 3px solid var(--clay); outline-offset: 4px; }
+.workshop-content form { margin: 20px 0; }
+.workshop-content .event + .event { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 20px; }
+.workshop-content .event p { margin: 6px 0; }
+.workshop-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 32px 0; }
+.workshop-steps article { border: 1px solid var(--line); background: var(--paper); border-radius: 16px; padding: 22px; }
+.workshop-steps span { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--soft); color: var(--clay); font-size: 13px; }
+.workshop-steps h3 { font-size: 16px; margin: 18px 0 8px; }
+.workshop-steps p { color: var(--muted); font-size: 14px; margin: 0; }
+@media (max-width: 760px) {
+  .workshop-scroll { padding: 24px 18px; }
+  .workshop-heading { margin-top: 0; }
+  .workshop-content section { padding: 20px; }
+  .workshop-steps { grid-template-columns: 1fr; gap: 12px; margin: 24px 0; }
+  .workshop-steps article { padding: 18px; }
+  .workshop-steps h3 { margin-top: 12px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }
 }

@@ -8,6 +8,22 @@ MARK = '''<svg viewBox="0 0 40 40" fill="none" aria-hidden="true" focusable="fal
 </svg>'''
 
 
+def render_sidebar(data, current='conversation'):
+    name = html.escape(str(data.get('name') or 'Your workspace'))
+    email = html.escape(str(data.get('email') or 'On your laptop'))
+    links = [('conversation', '/app', 'Conversation')]
+    if data.get('local_calendar'):
+        links.append(('calendar', '/calendar', 'My calendar'))
+    links += [('schedule', '/connections/chat', 'Schedule a meeting'), ('connections', '/connections', 'Connections')]
+    navigation = ''.join(f'<a href="{url}"' + (' aria-current="page"' if key == current else '') + f'>{label}</a>'
+                         for key, url, label in links)
+    return f'''<aside class="sidebar"><a href="/app" class="brand" aria-label="Pippa home">pippa<span>{MARK}</span></a>
+<p class="tagline">A little less on your mind.</p>
+<nav class="desktop-nav" aria-label="Pippa">{navigation}</nav>
+<details class="settings-menu"><summary>Settings</summary><nav aria-label="Settings">{navigation}</nav></details>
+<div class="account"><span class="avatar" aria-hidden="true">{MARK}</span><div><strong>{name}</strong><span>{email}</span></div></div></aside>'''
+
+
 def render_web_page(data):
     name = html.escape(str(data.get('name') or 'there'))
     email = html.escape(str(data.get('email') or ''))
@@ -17,11 +33,7 @@ def render_web_page(data):
 <title>Pippa — your everyday assistant</title><link rel="stylesheet" href="/pippa-web-assets/app.css">
 <script src="/pippa-web-assets/handsfree.js" defer></script><script src="/pippa-web-assets/app.js" defer></script></head><body>
 <a class="skip" href="#message">Skip to message</a><div class="app-shell">
-<aside class="sidebar"><a href="/app" class="brand" aria-label="Pippa home">pippa<span>{MARK}</span></a>
-<p class="tagline">A little less on your mind.</p>
-<nav class="desktop-nav" aria-label="Pippa"><a href="/app" aria-current="page">Conversation</a><a href="/connections/chat">Schedule a meeting</a><a href="/connections">Connections</a></nav>
-<details class="settings-menu"><summary>Settings</summary><nav aria-label="Settings"><a href="/connections/chat">Schedule a meeting</a><a href="/connections">Connections</a></nav></details>
-<div class="account"><span class="avatar" aria-hidden="true">{MARK}</span><div><strong>{name}</strong><span>{email}</span></div></div></aside>
+{render_sidebar(data)}
 <main class="main"><header class="topbar"><div><span class="eyebrow">YOUR EVERYDAY ASSISTANT</span><h1>A moment with Pippa</h1></div><span class="online">Here to help</span></header>
 <div id="chat-scroll" class="chat-scroll"><section id="welcome" class="welcome"><div class="pippa-mark">{MARK}</div><p class="eyebrow">A LITTLE SPACE TO THINK</p><h2>Hi {name}.<br>What's on your mind?</h2><p>Make a plan, remember a thought, or clear a little room in your day.</p>
 <div class="suggestions" aria-label="Message ideas"><button type="button" data-prompt="Help me plan my day.">Plan my day <span aria-hidden="true">↗</span></button><button type="button" data-prompt="What can you help me with?">Explore what Pippa can do <span aria-hidden="true">↗</span></button></div></section>
