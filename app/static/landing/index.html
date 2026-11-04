@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pippa — Less scheduling. More living.</title>
+  <meta name="description" content="A conversational assistant for your Google Calendar. Check your day, find time, and arrange meetings by typing or speaking. Request beta access.">
+  <meta name="theme-color" content="#faf6ec">
+  <link rel="stylesheet" href="/pippa-assets/fonts.css">
+  <link rel="stylesheet" href="/pippa-assets/reference.css">
+  <link rel="stylesheet" href="/pippa-assets/landing.css?v=launch-20261009">
+  <script src="/pippa-assets/waitlist.js?v=survey-1" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="wrap header">
+    <a href="#" class="brand" aria-label="Pippa home"><span class="brand-dot" aria-hidden="true"></span>pippa</a>
+    <nav aria-label="Main navigation"><a class="nav-detail" href="#how">How it works</a><a class="nav-detail" href="/b2b">For business</a><a href="/signin">Sign in</a><a class="button small" href="#waitlist">Request beta access <span aria-hidden="true">↗</span></a></nav>
+  </header>
+  <main id="main">
+    <section class="wrap hero" aria-labelledby="headline">
+      <div>
+        <p class="eyebrow"><span aria-hidden="true">●</span> Your calendar, in conversation</p>
+        <h1 id="headline"><span class="sr-only">Pippa. </span>Less scheduling.<br>More <em>living.</em></h1>
+        <p class="intro">Meet Pippa. Check your day, find a time, and arrange meetings by typing or speaking. A little help with your calendar. A little more room in your day.</p>
+        <div class="hero-actions"><a class="button" href="#waitlist">Request beta access <span aria-hidden="true">↗</span></a><a class="text-link" href="#how">See how it works <span aria-hidden="true">↓</span></a></div>
+        <p class="fine">Early beta · Access by invitation · Google Calendar</p>
+      </div>
+      <figure class="demo">
+        <div class="demo-top"><span class="demo-avatar" aria-hidden="true">p</span><div><strong>Pippa</strong><span>A little help with your day</span></div><span class="demo-status" aria-hidden="true">✦</span></div>
+        <div class="demo-chat">
+          <p class="chat user">What does my day look like?</p>
+          <div class="chat assistant"><p>You have a project catch-up at 10 and coffee at 3. There’s a free hour at 11.</p><div class="agenda"><span>10:00</span><strong>Project catch-up</strong><span>11:00</span><strong class="free">Room to breathe</strong><span>15:00</span><strong>Coffee with Alex</strong></div></div>
+          <p class="chat user">Good. Help me find a time for lunch tomorrow.</p>
+          <p class="chat assistant">Let’s check your calendar and find a slot.</p>
+        </div>
+        <div class="demo-input"><span>Type, or say it out loud</span><span class="mic" aria-hidden="true">♪</span></div>
+        <figcaption>Illustrative conversation. Your calendar, your context.</figcaption>
+      </figure>
+    </section>
+    <section class="ribbon"><div class="wrap"><p>For people whose plans happen in conversations.</p><span>Client calls. Coffee catch-ups. Everything in between.</span></div></section>
+    <section id="how" class="wrap section">
+      <p class="eyebrow">A calmer way to plan</p><h2>Say what you need.<br>Start with one small thing.</h2>
+      <div class="steps">
+        <article><span class="number">01</span><h3>Check your day</h3><p>“What’s on my calendar tomorrow?” Get a clear starting point without hunting through your week.</p></article>
+        <article><span class="number">02</span><h3>Find a time</h3><p>“When am I free for a 30-minute call?” Ask in your own words and work from your Google Calendar.</p></article>
+        <article><span class="number">03</span><h3>Make the plan</h3><p>Arrange the meeting with your confirmation. Pippa helps with the calendar details so you can focus on the conversation.</p></article>
+      </div>
+    </section>
+    <section class="warm"><div class="wrap section split"><div><p class="eyebrow">Fits the way you think</p><h2>Sometimes you type.<br>Sometimes you talk.</h2></div><div><p class="body-large">Use web chat when you’re at your desk. Speak when it’s easier to say the whole thought out loud.</p><p>WhatsApp and voice-note access are available to invited beta testers, with setup help. We’re opening access gradually and learning from real calendars.</p><a class="text-link" href="#waitlist">Join the early-access list <span aria-hidden="true">↗</span></a></div></div></section>
+    <section class="wrap section faq"><div><p class="eyebrow">Before you join</p><h2>A few good<br>questions.</h2></div><div>
+      <details><summary>Can I use Pippa today?</summary><p>We’re in an invitation-based beta. Request access and we’ll email you when your invitation is ready. Existing testers can sign in.</p></details>
+      <details><summary>Which calendar and email accounts work?</summary><p>Google Calendar, with personal Gmail or business email hosted on Google Workspace. Outlook, iCloud, Yahoo and AOL accounts aren’t supported yet.</p></details>
+      <details><summary>Do I need WhatsApp?</summary><p>Approved beta users with a connected calendar can use the web assistant. WhatsApp requires additional beta setup.</p></details>
+      <details><summary>Will it book things without asking?</summary><p>Pippa is designed to ask for your confirmation before arranging a meeting. You can review the details before going ahead.</p></details>
+      <details><summary>What happens to my data?</summary><p>Read the <a href="/privacy">privacy policy</a> for what’s collected, how service providers process it, and how to request deletion. Beta signup currently opens at example.com.</p></details>
+    </div></section>
+    <section class="wrap final-cta"><p class="eyebrow">A little less juggling</p><h2>Make room for<br>what you’d rather be doing.</h2><div class="beta-entry">      <p id="waitlist-email-help" class="waitlist-email-help"><strong>Pippa currently supports personal Gmail accounts and business email hosted on Google Workspace.</strong> Yahoo, AOL, iCloud and Outlook addresses aren't supported yet.</p>
+      <form id="waitlist" action="/api/waitlist" method="post" class="mt-9 flex max-w-md flex-col gap-3 sm:flex-row" aria-label="Join Pippa's early-access waitlist" aria-describedby="waitlist-email-help waitlist-feedback">
+        <div class="waitlist-honeypot" aria-hidden="true"><label>Leave this field empty<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+        <input id="waitlist-email" type="email" name="email" required maxlength="254" autocomplete="email" aria-label="Email address" aria-describedby="waitlist-email-help waitlist-feedback" placeholder="you@gmail.com" class="flex-1 rounded-full border border-border bg-card px-5 py-3 text-base outline-none placeholder:text-muted-foreground focus:border-ring">
+        <button id="waitlist-entry" type="submit" disabled class="rounded-full bg-primary px-6 py-3 text-base font-medium text-primary-foreground shadow-soft transition-transform hover:-translate-y-0.5">Get early access</button>
+      </form>
+      <noscript><p class="waitlist-feedback">Please enable JavaScript to join the early-access list.</p></noscript>
+      <p id="waitlist-feedback" class="waitlist-feedback" role="status" aria-live="polite" aria-atomic="true"></p>
+      <p class="waitlist-email-support">Work email not recognized? <a href="mailto:maintainer@example.com">Contact Son for help.</a></p></div><p class="fine">We’ll email you when your invitation is ready.</p></section>
+  </main>
+  <footer class="wrap footer"><a class="brand" href="#">pippa</a><p>A little more room in your day.</p><nav aria-label="Footer"><a href="/b2b">For business</a><a href="/privacy">Privacy &amp; data deletion</a><a href="/signup">Already invited?</a><a href="/signin">Sign in</a></nav></footer>
+  <dialog id="waitlist-survey" class="survey-dialog" aria-labelledby="survey-title" aria-describedby="survey-intro">
+    <header class="survey-header">
+      <a href="/" class="survey-brand" aria-label="Pippa home"><span aria-hidden="true">●</span> pippa</a>
+      <button id="survey-close" type="button" class="survey-close" aria-label="Close questions">Close <span aria-hidden="true">×</span></button>
+    </header>
+    <div class="survey-content">
+      <form id="survey-form" novalidate aria-describedby="survey-feedback">
+        <div id="survey-fields">
+          <p id="survey-title" class="survey-eyebrow">A little about you</p>
+          <p id="survey-intro" class="survey-intro">Four small questions to help shape Pippa. Only your first name is required.</p>
+          <p id="survey-progress" class="survey-progress" role="status" aria-live="polite">Question 1 of 4</p>
+          <section data-survey-step="0" class="survey-step">
+            <label for="survey-first-name" class="survey-question">What should we call you?</label>
+            <p id="survey-name-help" class="survey-hint">Your first name makes this feel a little more personal.</p>
+            <input id="survey-first-name" name="firstName" type="text" required maxlength="80" autocomplete="given-name" placeholder="Your first name" aria-describedby="survey-name-help" class="survey-input" autofocus>
+          </section>
+          <fieldset data-survey-step="1" class="survey-step" hidden>
+            <legend class="survey-question">How do you arrange meetings today?</legend>
+            <p class="survey-hint">Pick all that you use. You can skip this question.</p>
+            <div class="survey-options">
+              <label><input type="checkbox" name="schedulingTools" value="google_calendar"><span>Google Calendar</span></label>
+              <label><input type="checkbox" name="schedulingTools" value="outlook"><span>Outlook</span></label>
+              <label><input type="checkbox" name="schedulingTools" value="apple_calendar"><span>Apple Calendar</span></label>
+              <label><input type="checkbox" name="schedulingTools" value="calendly"><span>Calendly</span></label>
+              <label><input type="checkbox" name="schedulingTools" value="cal_com"><span>Cal.com</span></label>
+              <label><input type="checkbox" name="schedulingTools" value="whatsapp"><span>WhatsApp or messaging</span></label>
+              <label><input type="checkbox" name="schedulingTools" value="manual"><span>Email, paper, or memory</span></label>
+              <label><input type="checkbox" name="schedulingTools" value="other"><span>Something else</span></label>
+            </div>
+            <div id="survey-other-wrap" class="survey-other" hidden>
+              <label for="survey-tools-other">Which other tools? <span>(optional)</span></label>
+              <input id="survey-tools-other" name="schedulingToolsOther" type="text" maxlength="120" placeholder="Tell us what you use" class="survey-input">
+            </div>
+          </fieldset>
+          <section data-survey-step="2" class="survey-step" hidden>
+            <label for="survey-challenge" class="survey-question">What's the hardest part of scheduling?</label>
+            <p id="survey-challenge-help" class="survey-hint">Finding a time, the back-and-forth, keeping track… What's it like for you?</p>
+            <textarea id="survey-challenge" name="schedulingChallenge" rows="4" maxlength="600" placeholder="A sentence or two is plenty." aria-describedby="survey-challenge-help survey-challenge-limit" class="survey-input"></textarea>
+            <p id="survey-challenge-limit" class="survey-optional">Optional · up to 600 characters</p>
+          </section>
+          <section data-survey-step="3" class="survey-step" hidden>
+            <label for="survey-wish" class="survey-question">What would you most like Pippa to take care of?</label>
+            <p id="survey-wish-help" class="survey-hint">If you could hand over one thing from your day, what would it be?</p>
+            <textarea id="survey-wish" name="pippaWish" rows="4" maxlength="600" placeholder="I'd love a little help with…" aria-describedby="survey-wish-help survey-wish-limit" class="survey-input"></textarea>
+            <p id="survey-wish-limit" class="survey-optional">Optional · up to 600 characters</p>
+            <div id="waitlist-challenge" aria-label="Signup security check"></div>
+            <p class="survey-consent">By joining, you'll receive Pippa beta updates. Unsubscribe any time. We use your answers to personalize onboarding and improve Pippa. <a href="/privacy" target="_blank" rel="noopener">Privacy &amp; data deletion</a></p>
+          </section>
+          <div class="survey-actions">
+            <button id="survey-back" type="button" class="survey-back" hidden>← Back</button>
+            <button id="survey-next" type="submit" class="survey-primary">Continue →</button>
+            <button id="survey-skip" type="button" class="survey-skip" hidden>Skip for now</button>
+          </div>
+        </div>
+        <section id="survey-success" class="survey-success" hidden>
+          <span class="survey-success-mark" aria-hidden="true">✓</span>
+          <p class="survey-eyebrow">A little less juggling, soon</p>
+          <h2 id="survey-success-title" class="survey-question" tabindex="-1">You're on the list.</h2>
+          <p>Your early-access request is saved. We’ll email you with next steps when your invitation is ready.</p>
+          <p>Pippa is still in early beta. Thanks for helping shape what comes next.</p>
+          <button id="survey-done" type="button" class="survey-primary">Back to Pippa →</button>
+        </section>
+        <p id="survey-feedback" class="survey-feedback" role="status" aria-live="polite" aria-atomic="true"></p>
+      </form>
+    </div>
+    <footer class="survey-footer">A few thoughtful answers. A little more room in your day.</footer>
+  </dialog>
+</body>
+</html>

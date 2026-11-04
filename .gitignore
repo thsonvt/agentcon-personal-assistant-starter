@@ -1,0 +1,42 @@
+# Credentials; only the reviewed template is public.
+.env
+.env.*
+!.env.example
+*.env
+*.pem
+*.key
+*credentials*.json
+*token*.json
+
+# Local state and private artifacts.
+data/
+output/
+backups/
+logs/
+docs/
+.omx/
+.codex/
+.superpowers/
+workshop-sites/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.log
+.DS_Store
+
+# Generated dependencies and build artifacts.
+.venv/
+venv/
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.coverage
+htmlcov/

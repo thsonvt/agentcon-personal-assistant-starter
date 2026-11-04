@@ -1,0 +1,13 @@
+**
+!pyproject.toml
+!LICENSE
+!THIRD_PARTY_NOTICES.md
+!app/
+!app/**
+!main.py
+!scripts/
+!scripts/event_networking_admin.py
+**/__pycache__/
+**/*.pyc
+**/.DS_Store
+**/.env*

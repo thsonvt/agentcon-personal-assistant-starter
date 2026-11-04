@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentcon-personal-assistant-starter"
+version = "0.1.0"
+description = "AgentCon personal assistant workshop starter"
+license = "Apache-2.0"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+requires-python = ">=3.11"
+dependencies = [
+    "openai-agents>=0.22,<0.23",
+    "openai",  # voice-note transcription; version comes from openai-agents
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "httpx>=0.27",
+    "google-api-python-client>=2.140",
+    "google-auth>=2.30",
+    "python-dotenv>=1.0",
+    "cryptography>=42",  # encrypted Google tokens for signed-up users (Plan 2B)
+    "python-multipart>=0.0.9",  # the sign-up page's form
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "google-auth-oauthlib>=1.2"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+app = ["static/landing/*", "static/web/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
