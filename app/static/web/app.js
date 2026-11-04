@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const bootstrap = JSON.parse(document.getElementById('pippa-state').textContent);
+  const openAILive = bootstrap.voice?.live === 'openai';
   const el = id => document.getElementById(id);
   const composer = el('composer'), input = el('message'), mic = el('mic'), send = el('send');
   const status = el('status'), messages = el('messages'), stopAudio = el('stop-audio');
@@ -40,8 +41,10 @@
     input.disabled = conversation || busy || Boolean(recorder) || !state.ready || Boolean(state.pending);
     send.disabled = conversation || busy || Boolean(recorder) || !state.ready || uncertain || Boolean(state.pending);
     mic.disabled = conversation || busy || !state.ready || Boolean(state.pending) || !state.voice.stt || !navigator.mediaDevices?.getUserMedia || !codec();
-    conversationButton.disabled = !conversation && (!handsFree || busy || recorder || uncertain || state.pending || !state.ready || !state.voice.stt || !state.voice.tts || !navigator.mediaDevices?.getUserMedia || !(window.AudioContext || typeof AudioContext !== 'undefined' || window.webkitAudioContext) || typeof AudioWorkletNode === 'undefined' || typeof WebSocket === 'undefined');
-    conversationButton.textContent = conversation ? 'Stop conversation' : 'Start conversation';
+    const liveAvailable = openAILive ? state.voice.live === 'openai' && Boolean(window.RTCPeerConnection || typeof RTCPeerConnection !== 'undefined') :
+      state.voice.stt && state.voice.tts && Boolean(window.AudioContext || typeof AudioContext !== 'undefined' || window.webkitAudioContext) && typeof AudioWorkletNode !== 'undefined' && typeof WebSocket !== 'undefined';
+    conversationButton.disabled = !conversation && !handsFree?.needsStop && (!handsFree || busy || recorder || uncertain || state.pending || !state.ready || !liveAvailable || !navigator.mediaDevices?.getUserMedia);
+    conversationButton.textContent = handsFree?.needsStop ? 'Retry stopping voice' : conversation ? 'Stop conversation' : 'Start conversation';
     stopAudio.textContent = conversation ? 'Stop speaking' : 'Stop audio';
     conversationButton.setAttribute('aria-pressed', String(conversation));
     if (textToggle) textToggle.disabled = conversation;
@@ -112,7 +115,7 @@
       messages.append(row);
     }
     el('welcome').hidden = Boolean(messages.children.length);
-    el('voice-hint').textContent = !state.voice.stt ? 'Voice input is not configured yet. You can type your message.' :
+    el('voice-hint').textContent = openAILive ? 'OpenAI live voice uses your microphone and speakers and is billed to your API account. Stop voice and use typed confirmation for calendar changes.' : !state.voice.stt ? 'Voice input is not configured yet. You can type your message.' :
       !navigator.mediaDevices?.getUserMedia || !codec() ? 'Voice recording is unavailable in this browser. Use a supported browser over HTTPS, or type.' :
         'Start conversation for hands-free voice, or Record voice to review a transcript before sending.';
     controls();
@@ -165,13 +168,19 @@
     await sendMessage(input.value.trim(), voiceDraft);
   });
 
-  if (window.PippaHandsFree) {
-    handsFree = new window.PippaHandsFree({
+  const Conversation = openAILive ? window.PippaOpenAILive : window.PippaHandsFree;
+  if (Conversation) {
+    handsFree = new Conversation({
+      start: sdp => request('/api/web/live/session', jsonPost({sdp})),
+      stop: sessionId => request('/api/web/live/stop', {...jsonPost({session_id: sessionId}), keepalive: true}),
       token: async () => (await request('/api/web/realtime-token', jsonPost({}))).token,
       turn: async text => {
         const replyId = await sendMessage(text, true);
         if (!replyId || state.pending) throw new Error('Review the conversation before starting again.');
-        return replyId;
+        if (!openAILive) return replyId;
+        const reply = state.messages.find(message => message.id === replyId)?.content;
+        if (!reply) throw new Error('The backend result is uncertain. Review the conversation before trying again.');
+        return reply;
       },
       speech: replyId => request('/api/web/speech', jsonPost({message_id: replyId}), true),
       auth: async () => {
@@ -179,12 +188,12 @@
         if (!current.ready) throw new Error('Sign in to continue.');
       },
       status: (phase, message) => {
-        const labels = {starting: 'Connecting…', listening: 'Listening', thinking: 'Thinking…', preparing: 'Preparing reply…', speaking: 'Pippa is speaking', idle: ''};
+        const labels = {starting: 'Connecting…', listening: 'Listening', thinking: 'Thinking…', preparing: 'Preparing reply…', speaking: 'Pippa is speaking', stopping: 'Finishing voice session…', idle: ''};
         status.textContent = phase === 'error' ? (message.includes('permission') ? 'Microphone blocked. Check permissions.' : message.includes('sign-in') ? 'Sign in again to use voice.' : 'Voice disconnected. Tap Start to retry.') : labels[phase] ?? message;
         const details = el('voice-status-details'), detail = el('voice-status-detail');
         if (details && detail) { details.hidden = phase !== 'error'; detail.textContent = phase === 'error' ? message : ''; }
         if (document.body) document.body.dataset.voicePhase = phase;
-        if (phase !== 'listening') el('live-transcript').textContent = '';
+        if ((!openAILive && phase !== 'listening') || ['idle', 'error'].includes(phase)) el('live-transcript').textContent = '';
         stopAudio.hidden = !['preparing', 'speaking'].includes(phase);
         controls();
       },
@@ -193,7 +202,7 @@
   }
   conversationButton.addEventListener('click', async () => {
     if (!handsFree) return;
-    if (handsFree.active) { handsFree.stop(); return; }
+    if (handsFree.active || handsFree.needsStop) { await handsFree.stop(); controls(); return; }
     if (busy || recorder || uncertain || state.pending || !state.ready) return;
     if (input.value.trim()) { status.textContent = 'Send or clear your draft before starting a conversation.'; input.focus(); return; }
     stopPlayback();

@@ -81,7 +81,25 @@ For write exercises, create a separate workshop calendar and set `GOOGLE_CALENDA
 
 For an invitation, supply the exact attendee name, authorized email, date, time, duration, and location. Review the complete proposal before confirming. Invitations may send real email; do not invite fixture addresses. The existing tool requests Google Meet if no location was supplied, and reports a link only if Google returns one. Invitation creation does not prove email delivery or attendee acceptance.
 
-A Gmail account gives access to Google Calendar, but reading inbox emails is a separate permission. This local workshop flow requests Calendar access, not Gmail inbox access. WhatsApp outreach, Calendly links, group booking pages, and background reminders are not part of this launcher. ElevenLabs voice is optional if separately configured.
+A Gmail account gives access to Google Calendar, but reading inbox emails is a separate permission. This local workshop flow requests Calendar access, not Gmail inbox access. WhatsApp outreach, Calendly links, group booking pages, and background reminders are not part of this launcher.
+
+## Speak instead of typing
+
+With Google connected and your OpenAI key/model configured, open **Conversation**, click **Start conversation**, and allow the browser to use your microphone. Ask “What is on my calendar today?” Pippa uses GPT-Live for listening and spoken replies, while the existing calendar assistant checks your events. Headphones help prevent speaker audio feeding back into the microphone.
+
+The voice model defaults to the following; your reasoning model remains `OPENAI_MODEL`:
+
+```dotenv
+OPENAI_VOICE_MODEL=gpt-live-1
+```
+
+**Stop conversation** turns off the microphone and ends the voice session. **Stop speaking** interrupts the current reply while leaving the conversation active. Sessions end after five minutes; start another explicitly if needed. If the browser blocks speaker playback or reports a connection error, check the message under **Connection details**. Do not automatically repeat a calendar request after an uncertain result.
+
+Voice can read your calendar and prepare a booking or deletion proposal. For calendar changes, stop voice, review the details in chat, and **type** your confirmation. To move or rename an event, type the exact change. Spoken “yes” does not authorize a write: live transcripts can contain partial sentences and corrections. This preserves an explicit confirmation step while using the same calendar tools.
+
+Audio goes to OpenAI during a live session. Voice duration and backend model usage are billed separately to your API account, including the provider's WebRTC initialization charge. The project key stays on the local server. See the [GPT-Live connection and billing notes](https://developers.openai.com/api/docs/guides/voice-webrtc?api=live). The app does not request provider recording storage. It saves the delegated requests and backend replies in your local chat history; live captions are not a complete recording.
+
+ElevenLabs is not required for **Start conversation**. **Record voice** (record, review transcript, send) and replaying saved replies still use the optional ElevenLabs settings. They remain unavailable if those settings are empty.
 
 ## Troubleshooting
 

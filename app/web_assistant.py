@@ -16,6 +16,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Redirect
 from app.booking import BOOKING_LOCK
 from app.router import PartialRunError, RateLimiter, partial_run_reply
 from app.tools.elevenlabs import AUDIO_TYPES, MAX_UPLOAD_BYTES, VoiceError
+from app.tools.openai_live import LiveVoiceError
 from app.web_pages import render_web_page
 
 HEADERS = {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
@@ -27,8 +28,9 @@ INTERRUPTED = ('The previous request was interrupted and its outcome is uncertai
 
 
 class WebAssistant:
-    def __init__(self, connections, run, voice, base_url):
+    def __init__(self, connections, run, voice, base_url, *, live=None):
         self.connections, self.users = connections, connections.users
+        self.live = live
         self.conn, self.run, self.voice = self.users.conn, run, voice
         parsed = urlsplit(base_url)
         self.origin = f'{parsed.scheme}://{parsed.netloc}'
@@ -91,11 +93,11 @@ class WebAssistant:
             body.extend(chunk)
         return bytes(body)
 
-    async def _json(self, request):
+    async def _json(self, request, limit=16384):
         if request.headers.get('content-type', '').split(';')[0].strip() != 'application/json':
             raise ValueError('Send a JSON request.')
         try:
-            value = json.loads(await self._body(request, 16384))
+            value = json.loads(await self._body(request, limit))
         except (ValueError, UnicodeDecodeError):
             raise ValueError('Invalid JSON request.') from None
         if not isinstance(value, dict):
@@ -117,10 +119,16 @@ class WebAssistant:
         state['messages'].append(dict(id=secrets.token_hex(16), role=role, content=text, voice=voice))
         state['messages'] = state['messages'][-40:]
 
+    def _voice_state(self):
+        state = dict(stt=self.voice.stt_enabled, tts=self.voice.tts_enabled)
+        if self.live is not None:
+            state['live'] = 'openai'
+        return state
+
     def _state(self, user_id):
         state = self._load(user_id)
         return dict(messages=state['messages'], revision=state['revision'], ready=True,
-                    voice=dict(stt=self.voice.stt_enabled, tts=self.voice.tts_enabled),
+                    voice=self._voice_state(),
                     pending=state.get('pending', False))
 
     def _response(self, user_id):
@@ -196,12 +204,12 @@ class WebAssistant:
                 return RedirectResponse('/signin', status_code=303, headers=HEADERS)
             data = dict(name=user.first_name, email=user.email, csrf_token=session['csrf'],
                         local_calendar=getattr(self.connections, 'workshop_calendar', False),
-                        ready=self._ready(user), voice=dict(stt=self.voice.stt_enabled, tts=self.voice.tts_enabled))
+                        ready=self._ready(user), voice=self._voice_state())
             return HTMLResponse(render_web_page(data), headers=HEADERS)
 
         @self.router.get('/pippa-web-assets/{filename}')
         def asset(filename: str):
-            if filename not in ('app.js', 'app.css', 'handsfree.js', 'pcm-worklet.js'):
+            if filename not in ('app.js', 'app.css', 'handsfree.js', 'openai-live.js', 'pcm-worklet.js'):
                 raise HTTPException(404)
             return FileResponse(ASSETS / filename, headers={'Cache-Control': 'no-cache',
                                                           'X-Content-Type-Options': 'nosniff'})
@@ -215,6 +223,61 @@ class WebAssistant:
         async def message(request: Request):
             user, error = self._auth(request, mutation=True)
             return error if error is not None else await self._message(request, user)
+
+        @self.router.post('/api/web/live/session')
+        async def live_session(request: Request):
+            user, error = self._auth(request, mutation=True)
+            if error is not None:
+                return error
+            if request.headers.get('origin') != self.origin:
+                return self._error('Refresh the page before starting voice.', 403)
+            if not user.google_token_enc or user.google_disconnected:
+                return self._error('Connect Google Calendar in Connections before starting voice.', 403)
+            if self.live is None:
+                return self._error('OpenAI live voice is not configured. Set your API key and model, then restart.', 503)
+            try:
+                data = await self._json(request, 65536)
+                sdp = data.get('sdp')
+                if not isinstance(sdp, str) or not sdp.strip():
+                    raise ValueError('A valid audio connection offer is required.')
+            except ValueError as exc:
+                return self._error(str(exc))
+            if not self.realtime_limiter.allow(str(user.id), self.connections.now()):
+                return self._error('Too many voice starts. Please try again later.', 429)
+            try:
+                result = await self.live.create(user.id, sdp)
+            except LiveVoiceError as exc:
+                return self._error(str(exc), exc.status_code)
+            current, error = self._auth(request, mutation=True)
+            if error is not None or current.id != user.id:
+                try:
+                    await self.live.stop(user.id, result['session']['id'])
+                except LiveVoiceError:
+                    log.warning('Live voice cleanup needs attention for user #%d', user.id)
+                return error if error is not None else self._error('Your sign-in changed. Refresh to continue.', 401)
+            return JSONResponse(result, status_code=201, headers=HEADERS)
+
+        @self.router.post('/api/web/live/stop')
+        async def live_stop(request: Request):
+            user, error = self._auth(request, mutation=True)
+            if error is not None:
+                return error
+            if request.headers.get('origin') != self.origin:
+                return self._error('Refresh the page before ending voice.', 403)
+            if self.live is None:
+                return self._error('OpenAI live voice is not configured.', 503)
+            try:
+                data = await self._json(request)
+                session_id = data.get('session_id')
+                if not isinstance(session_id, str) or not session_id or len(session_id) > 256:
+                    raise ValueError('A valid voice session is required.')
+            except ValueError as exc:
+                return self._error(str(exc))
+            try:
+                await self.live.stop(user.id, session_id)
+            except LiveVoiceError as exc:
+                return self._error(str(exc), exc.status_code)
+            return JSONResponse({'stopped': True}, headers=HEADERS)
 
         @self.router.post('/api/web/realtime-token')
         async def realtime_token(request: Request):

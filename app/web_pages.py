@@ -26,12 +26,14 @@ def render_sidebar(data, current='conversation'):
 
 def render_web_page(data):
     name = html.escape(str(data.get('name') or 'there'))
-    email = html.escape(str(data.get('email') or ''))
+    live = data.get('voice', {}).get('live') == 'openai'
+    voice_notice = ('AI voice uses OpenAI and API usage is billed. Calendar changes require typed confirmation in chat.'
+                    if live else 'Voice uses ElevenLabs.')
     state = json.dumps(data).replace('&', '\\u0026').replace('<', '\\u003c').replace('>', '\\u003e')
     return f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pippa — your everyday assistant</title><link rel="stylesheet" href="/pippa-web-assets/app.css">
-<script src="/pippa-web-assets/handsfree.js" defer></script><script src="/pippa-web-assets/app.js" defer></script></head><body>
+<script src="/pippa-web-assets/handsfree.js" defer></script><script src="/pippa-web-assets/openai-live.js" defer></script><script src="/pippa-web-assets/app.js" defer></script></head><body>
 <a class="skip" href="#message">Skip to message</a><div class="app-shell">
 {render_sidebar(data)}
 <main class="main"><header class="topbar"><div><span class="eyebrow">YOUR EVERYDAY ASSISTANT</span><h1>A moment with Pippa</h1></div><span class="online">Here to help</span></header>
@@ -47,6 +49,6 @@ def render_web_page(data):
 <div id="text-entry" class="text-entry"><label class="sr-only" for="message">Your message</label><textarea id="message" name="message" placeholder="Type a message…" rows="1" maxlength="4000" required></textarea><button id="send" class="send" type="submit">Send <span aria-hidden="true">↑</span></button></div>
 <details class="more-controls"><summary>More controls</summary><button id="mic" type="button" aria-pressed="false">Record voice</button></details>
 </form>
-<details class="voice-help"><summary>Voice and privacy</summary><div><p id="voice-hint">Start conversation to speak naturally. Pippa replies aloud and listens again.</p><p>Voice uses ElevenLabs. Your microphone is on while listening; Stop conversation turns it off. <a href="/privacy">Privacy</a></p><p>Pippa can make mistakes. Check important details before taking action.</p></div></details>
+<details class="voice-help"><summary>Voice and privacy</summary><div><p id="voice-hint">Start conversation to speak naturally. Pippa replies aloud and listens again.</p><p>{voice_notice} Your microphone is on while listening; Stop conversation turns it off. <a href="/privacy">Privacy</a></p><p>Pippa can make mistakes. Check important details before taking action.</p></div></details>
 <noscript><p>Enable JavaScript to chat with Pippa. <a href="/connections/chat">Scheduling chat</a> also works without JavaScript.</p></noscript></section>
 </main></div><script id="pippa-state" type="application/json">{state}</script></body></html>'''

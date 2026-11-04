@@ -5,7 +5,8 @@ import os
 import secrets
 import sqlite3
 import threading
-from contextlib import closing
+from contextlib import closing, asynccontextmanager
+from dataclasses import replace
 from datetime import date, datetime, time, timedelta
 from html import escape
 from pathlib import Path
@@ -25,6 +26,7 @@ from app.timeutil import SGT
 from app.tools.calendar import CalendarAuthError, GoogleCalendar, build_service
 from app.tools.calendly import BookingLink
 from app.tools.elevenlabs import ElevenLabsVoice
+from app.tools.openai_live import OpenAILiveSessions
 from app.tools.google_oauth import CALENDAR_SCOPE, GoogleOAuth, GoogleOAuthError
 from app.users import Users
 from app.web_assistant import WebAssistant
@@ -37,6 +39,24 @@ OAUTH_COOKIE = 'pippa_workshop_oauth'
 CALENDAR_TOOLS = {'list_events', 'find_conflicts', 'get_free_slots', 'create_event', 'update_event',
                   'delete_event', 'get_event_details', 'save_contact', 'list_contacts', 'remember',
                   'recall', 'forget', 'set_working_hours'}
+
+
+def _voice_confirmation(tool):
+    async def invoke(ctx, arguments):
+        if not ctx.context.current_input_is_voice:
+            return await tool.on_invoke_tool(ctx, arguments)
+        if tool.name == 'update_event':
+            ctx.context.booking_reply = ('No event was changed. Stop conversation and type the exact event change in chat to confirm it.')
+            return 'CONFIRM: ' + ctx.context.booking_reply
+        values = json.loads(arguments)
+        values['confirmed'] = False
+        result = await tool.on_invoke_tool(ctx, json.dumps(values))
+        if result.startswith('CONFIRM:'):
+            note = ' Stop conversation, review the details, then type your confirmation in chat. Spoken confirmation does not change the calendar.'
+            ctx.context.booking_reply = (ctx.context.booking_reply or result.removeprefix('CONFIRM: ')) + note
+            return result + note
+        return result
+    return replace(tool, on_invoke_tool=invoke)
 
 
 def _hash(value):
@@ -117,7 +137,9 @@ class Workshop:
         self.context_token = None
         self.session = None
         self.agent = None
+        self.live = None
         if self.ai_configured:
+            self.live = OpenAILiveSessions(self.env['OPENAI_API_KEY'], self.env.get('OPENAI_VOICE_MODEL') or 'gpt-live-1')
             set_default_openai_key(self.env['OPENAI_API_KEY'])
             def instructions(ctx, agent):
                 return assistant_instructions(ctx, agent).replace('on WhatsApp', 'in this local web app') + (
@@ -125,12 +147,15 @@ class Workshop:
                     'only the provided Calendar, contacts and memory tools are available. '
                     'Gmail, WhatsApp, Calendly, group links and reminder delivery are unavailable. '
                     'Never claim to access those services. Use /calendar for the direct agenda and '
-                    '/connections to reconnect Google. Preserve all booking readback and confirmation rules.')
+                    '/connections to reconnect Google. Preserve all booking readback and confirmation rules. '
+                    'For voice input, prepare bookings/deletions but require the user to stop voice and confirm in typed chat. '
+                    'Updates must also be requested in typed chat. Spoken yes is never authorization to change the calendar.')
             base = build_assistant(self.env['OPENAI_MODEL'])
             self.agent = base.clone(name='Pippa workshop', instructions=instructions,
-                                    tools=[tool for tool in base.tools if tool.name in CALENDAR_TOOLS])
+                                    tools=[_voice_confirmation(tool) if tool.name in {'create_event', 'update_event', 'delete_event'} else tool
+                                           for tool in base.tools if tool.name in CALENDAR_TOOLS])
         self.web = WebAssistant(self.owner, self.run,
-            ElevenLabsVoice(self.env.get('ELEVENLABS_API_KEY', ''), self.env.get('ELEVENLABS_VOICE_ID', '')), ORIGIN)
+            ElevenLabsVoice(self.env.get('ELEVENLABS_API_KEY', ''), self.env.get('ELEVENLABS_VOICE_ID', '')), ORIGIN, live=self.live)
 
     @property
     def google_configured(self):
@@ -174,7 +199,14 @@ class Workshop:
 
 def build_workshop_app(env=None):
     workshop = Workshop(os.environ if env is None else env)
-    app = FastAPI()
+    @asynccontextmanager
+    async def lifespan(app):
+        try:
+            yield
+        finally:
+            if workshop.live is not None:
+                await workshop.live.shutdown()
+    app = FastAPI(lifespan=lifespan)
     app.state.workshop = workshop
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1'])
     app.include_router(workshop.web.router)
@@ -360,6 +392,6 @@ def build_workshop_app(env=None):
 
     @app.get('/privacy')
     def privacy():
-        return page('Local workshop privacy', '<p>Your Google token is encrypted in the local database. Calendar events are read from Google. When you use AI chat, its conversation and tool results are sent to your configured AI provider. Calendar changes and invitations are real. Keep this app on your laptop and never expose it publicly.</p>')
+        return page('Local workshop privacy', '<p>Your Google token is encrypted in the local database. Calendar events are read from Google. When you use AI chat, its conversation and tool results are sent to your configured AI provider. Live voice sends microphone audio to OpenAI while active and is billed to your API account. Stop conversation turns off the microphone. Calendar changes and invitations are real and require typed confirmation after voice proposals. Keep this app on your laptop and never expose it publicly.</p>')
 
     return app

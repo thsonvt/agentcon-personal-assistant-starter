@@ -13,7 +13,7 @@ class Element {
 const tick = () => new Promise(resolve => setImmediate(resolve));
 async function create(responses, extra = {}) {
   const elements = Object.fromEntries(['pippa-state','messages','welcome','status','message','composer','mic','send','stop-audio','voice-hint','chat-scroll','refresh','handsfree','live-transcript','toggle-text','text-entry','voice-status-details','voice-status-detail'].map(key => [key, new Element()]));
-  elements['pippa-state'].textContent = JSON.stringify({csrf_token:'token',ready:true,voice:{stt:false,tts:true}});
+  elements['pippa-state'].textContent = JSON.stringify({csrf_token:'token',ready:true,voice:extra.bootstrapVoice || {stt:false,tts:true}});
   const calls = [];
   const viewportStyles = {};
   vm.runInNewContext(fs.readFileSync('app/static/web/app.js', 'utf8'), {
@@ -145,5 +145,33 @@ async function create(responses, extra = {}) {
   assert.equal(app.viewportStyles['--app-height'],'300px','keyboard viewport keeps composer on screen');
   viewport.height=150;viewport.scale=2;resizeViewport();
   assert.equal(app.viewportStyles['--app-height'],'300px','pinch zoom does not shrink the app layout');
+  let openAILive;
+  class OpenAIConversation extends Conversation { constructor(options) { super(options); openAILive=this; } }
+  app = await create([
+    {body:{messages:[],revision:0,ready:true,voice:{stt:false,tts:false,live:'openai'}}},
+    {body:{session:{id:'live-owned'},transport:{sdp:'answer'}}},
+    {body:{messages:[{id:'live-u',role:'user',content:'today'},{id:'live-a',role:'assistant',content:'No events today.'}],revision:1,ready:true,voice:{stt:false,tts:false,live:'openai'}}},
+    {body:{stopped:true}}
+  ], {bootstrapVoice:{stt:false,tts:false,live:'openai'},window:{addEventListener(){},PippaOpenAILive:OpenAIConversation,PippaHandsFree:Conversation},RTCPeerConnection:class {},navigator:{mediaDevices:{getUserMedia(){}}}});
+  assert.equal(app.elements.handsfree.disabled,false,'OpenAI live does not require ElevenLabs STT/TTS, AudioWorklet or recording codecs');
+  assert.equal(app.elements.mic.disabled,true,'file transcription remains separately configured');
+  assert.match(app.elements['voice-hint'].textContent,/OpenAI/);
+  assert.match(app.elements['voice-hint'].textContent,/confirmation/);
+  await app.elements.handsfree.listeners.click();
+  await openAILive.options.start('test-sdp');
+  assert.equal(app.calls[1].url,'/api/web/live/session');
+  assert.equal(JSON.parse(app.calls[1].options.body).sdp,'test-sdp');
+  assert.equal(app.calls[1].options.headers['X-CSRF-Token'],'token');
+  assert.equal(await openAILive.options.turn('today'),'No events today.','Live receives verified text, not a message ID');
+  assert.equal(JSON.parse(app.calls[2].options.body).voice,true);
+  openAILive.options.transcript('You: today\nPippa: Let me check.');
+  openAILive.options.status('thinking','Checking…');
+  assert.match(app.elements['live-transcript'].textContent,/You: today/,'live caption speakers remain independent during delegation');
+  await openAILive.options.stop('live-owned');
+  assert.equal(app.calls[3].url,'/api/web/live/stop');
+  assert.equal(app.calls[3].options.keepalive,true,'unload stop can outlive navigation');
+  assert.equal(JSON.parse(app.calls[3].options.body).session_id,'live-owned');
+  await app.elements.handsfree.listeners.click();
+  assert.equal(app.elements.message.disabled,false,'stopping re-enables typing');
   console.log('Pippa UI: escaping, CSRF, conflict reconciliation, and unknown send, pending reply, and voice lifecycle checks passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});
