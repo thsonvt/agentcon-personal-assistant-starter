@@ -48,23 +48,108 @@ The pip alternative resolves dependencies when you install; it does not use `uv.
 
 For a 90-minute session, start with the preview, choose one useful behavior, implement it behind a tool, then test its validation, storage and result. The source includes advanced scheduling features so existing imports and tests remain intact; you do not need to configure them all to run the preview.
 
-## Connect your own services (optional)
+## Connect your own Google Calendar for a live assistant
+
+The source already supports reading your agenda, checking availability, and creating, moving, or deleting Google Calendar events. The preview does not use these tools. Google authorization is performed by `scripts/get_google_token.py`, not by the preview's Connections page.
+
+**Current launcher limitation:** the live web launcher still builds the full application. In addition to Google and OpenAI, it requires Meta WhatsApp and Calendly settings, plus all six public sign-up settings listed below. Connecting Google alone will not make `run_web_local.py` start. Complete this setup before the workshop if using the current live launcher; a Google-and-OpenAI-only launcher is not implemented yet.
+
+### 1. Prepare your private configuration
+
+If `.env` does not exist, copy the template once. Otherwise, edit your existing file without overwriting it:
 
 ```bash
 cp .env.example .env
+uv sync --locked --extra dev
 ```
 
-Fill in **your own** values. Never use the presenter's production credentials. `app/config.py` lists the required settings for the full runtime: OpenAI model/API key, Meta WhatsApp settings, Google OAuth client/refresh token, Calendly settings, owner number and database path. Google and Meta setup may take longer than the workshop; it is not required for the fake preview. ElevenLabs voice is optional.
+Use your own accounts and credentials. Set `OPENAI_API_KEY` to your own API key and `OPENAI_MODEL` to a model available to that API account. The starter has no shared workshop API key or proxy; API usage is billed to your account. Do not paste credentials into chat or commit `.env`.
 
-The starter uses the existing official OpenAI client; it does not contain a shared workshop proxy endpoint or key. Provider access and charges belong to your own account.
+### 2. Create Google OAuth credentials
+
+Follow Google's [Calendar Python setup guide](https://developers.google.com/workspace/calendar/api/quickstart/python) for the Cloud project and OAuth client, then use this repository's helper rather than Google's sample program:
+
+1. Create or select your own Google Cloud project and enable **Google Calendar API**.
+2. Configure **Google Auth Platform → Branding** with your app name and contact email. For a personal Gmail account, use an **External** audience, keep the app in **Testing**, and add your own Google account under **Audience → Test users**. An organization account may require administrator approval.
+3. Under **Data Access**, include `https://www.googleapis.com/auth/calendar`. The helper requests this read/write scope because the assistant can schedule and edit events.
+4. Under **Clients**, create a **Desktop app** OAuth client for this local helper. Copy its client ID and client secret into `.env` as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. This is separate from the full application's Web client used in step 4 below.
+
+### 3. Sign in to your Google account
+
+From the repository folder, run:
+
+```bash
+uv run --locked python scripts/get_google_token.py --save-env
+```
+
+Your browser opens Google's consent screen. Select the account whose calendar you want to use, check that the app is yours, and grant Calendar access. The helper receives the callback on `http://localhost:8765/`, saves `GOOGLE_REFRESH_TOKEN` in `.env`, and reports that it saved the token without printing it. Keep port 8765 free during authorization. Stop here if consent fails; do not substitute a placeholder token.
+
+If reusing an existing **Web application** OAuth client with this helper, its authorized redirect URI must be exactly `http://localhost:8765/`, including the trailing slash. With the recommended Desktop client, a manually configured web redirect is unnecessary.
+
+Set `GOOGLE_CALENDAR_ID=primary` to read your main calendar. For write exercises, create a separate workshop calendar and set this variable to its Calendar ID from Google Calendar settings → **Integrate calendar**. Reads and writes both use the selected calendar; an empty workshop calendar will not show events from your main calendar. Restart the live app after changing `.env`.
+
+Gmail access is separate and unnecessary for the agenda/meeting exercise. Only if you want email-reading features, enable Gmail API and rerun the helper with `--gmail --save-env`, granting both permissions. Calendar consent does not grant Gmail access.
+
+### 4. Complete the current live launcher's prerequisites
+
+These requirements come from `app/config.py` and `app/wiring.py`; do not fill them with dummy credentials:
+
+| Configuration | Required values |
+| --- | --- |
+| AI | `OPENAI_API_KEY`, `OPENAI_MODEL` |
+| Owner's Google account | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN` |
+| Meta WhatsApp | `WA_TOKEN`, `WA_PHONE_NUMBER_ID`, `WA_APP_SECRET`, `WA_VERIFY_TOKEN`, `OWNER_WHATSAPP` |
+| Calendly | `CALENDLY_TOKEN`, `CALENDLY_EVENT_TYPE_URI` |
+| Local storage | `DB_PATH` (for example, `./data/workshop.db`) |
+| Web sign-up configuration | `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_WEB_CLIENT_SECRET`, `BASE_URL`, `BOT_WHATSAPP`, `TOKEN_KEY`, `SESSION_SECRET` |
+
+For the Web sign-up client, use the actual Web application OAuth client and register `<BASE_URL>/signup/callback`; `BASE_URL` must be your HTTPS origin. The local launcher does not serve this public OAuth callback. The six sign-up fields are needed because web chat is currently constructed inside the sign-up-enabled runtime, even though the local owner signs in through the helper above. Generate your own encryption/session keys locally and copy them into `.env`:
+
+```bash
+uv run --locked python scripts/check_setup.py --new-key
+```
+
+ElevenLabs voice is optional. Leave its settings empty for a text-only exercise. Leave advanced pilot flags disabled unless you are explicitly testing them.
+
+Check the configured services before starting:
+
+```bash
+uv run --locked python scripts/check_setup.py
+```
+
+This contacts the configured providers. Look for a successful **Google Calendar** check reporting how many events are readable in the next seven days. A passing Google check does not mean other providers are configured. Resolve the reported startup prerequisites before continuing.
+
+### 5. Start the live app and verify your own calendar
+
+Stop the preview with **Ctrl+C** first; both launchers use port 8016. Then run:
 
 ```bash
 uv run --locked python scripts/run_web_local.py
 ```
 
-Open http://127.0.0.1:8016/app. **This is the real runtime and can change your calendar.** Use a separate test calendar and your own test accounts. The loopback login is for local development; do not expose this runner through a tunnel or public host.
+Open http://127.0.0.1:8016/app and click **Open Pippa** on the local sign-in page. This button establishes a local owner session; it does not perform Google OAuth. **Calendar changes are real.** Keep this server on loopback; do not expose it through a tunnel or public host. Background WhatsApp jobs and webhook routes are not started by this local runner.
 
-`chat.py` is the terminal interface. `main.py` and `Dockerfile` are the full server entry points, not the preview. All require the appropriate real configuration. Before hosting a copy, configure your own OAuth redirects, webhook validation, origin, privacy/contact text and optional mailing-list settings. Example contact links are placeholders; the supplied pages are not your deployment's privacy statement. Optional sign-up settings must be supplied together; generate your own encryption and session keys with `scripts/check_setup.py --new-key`.
+Try these in order, checking the selected calendar in Google Calendar after each action. The assistant currently interprets schedules in **Asia/Singapore (UTC+08:00)**; use explicit dates and times for the workshop.
+
+1. Ask: **“What is on my calendar today?”** Compare its answer with that calendar, including the date and timezone.
+2. Ask: **“Find a free 30-minute slot tomorrow between 2pm and 5pm Singapore time.”** This should read availability without booking anything.
+3. On your workshop calendar, ask: **“Create a personal event called AgentCon practice tomorrow from 3pm to 3:30pm Singapore time. No guests and no location.”** Resolve any conflict or clarification the assistant raises. Verify the event exists in Google Calendar.
+4. Ask: **“Move AgentCon practice to 4pm tomorrow, keeping its duration.”** Check the changed time.
+5. Ask: **“Delete AgentCon practice.”** Review the proposed event and confirm in a separate message. Check that it was removed.
+
+For a real invitation, supply the exact attendee name, an email you are authorized to invite, date, time, duration, and location. Review the assistant's complete proposal before confirming. An invitation can send a real email; do not use fixture addresses. The code requests Google Meet when an invitation has no supplied location. Treat a meeting link as created only when Google returns one, and an invitation request as distinct from email delivery or attendee acceptance.
+
+### Troubleshooting Google setup
+
+- **Missing `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`:** run from the repository folder and fill those values in `.env`.
+- **`redirect_uri_mismatch`:** use a Desktop client, or correct the Web client's exact localhost redirect above.
+- **Access blocked / not a test user:** check the selected Google account against your OAuth app's test-user list and any organization restrictions.
+- **Calendar API disabled / insufficient permission:** enable Calendar API in the client's project, rerun the helper, and grant Calendar access.
+- **`invalid_grant` / expired token:** reconnect with `--save-env` and restart. External apps in Testing can have refresh tokens expire after seven days; see [Google's token-expiration documentation](https://developers.google.com/identity/protocols/oauth2#expiration).
+- **Missing WhatsApp/Calendly settings or “complete sign-up configuration” error:** this is the current launcher coupling described in step 4, not evidence that Google sign-in failed.
+- **Still seeing “fake assistant”:** you are running the preview. Stop it and launch `run_web_local.py` after completing the real configuration.
+
+`chat.py` is the full terminal interface; `main.py` and `Dockerfile` are full server entry points. They also need real configuration. Before hosting, configure your own OAuth redirects, webhook validation, origin, privacy/contact text, and optional mailing-list settings. Example contact links are placeholders, not your deployment's privacy statement.
 
 ## Verify
 
