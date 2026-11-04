@@ -4,7 +4,16 @@ A clean source starter based on the Pippa scheduling assistant for the AgentCon 
 
 ## Start without credentials
 
-With [uv](https://docs.astral.sh/uv/):
+Install Git and Python 3.11+ first. For the recommended setup, install [uv](https://docs.astral.sh/uv/). Then open a terminal and clone the starter (skip the clone if you already have it):
+
+```bash
+git clone https://github.com/thsonvt/agentcon-personal-assistant-starter.git
+cd agentcon-personal-assistant-starter
+```
+
+Run all commands below from this repository folder. No `.env` file or API keys are needed for the preview.
+
+With uv (recommended; uses the committed dependency lockfile):
 
 ```bash
 uv sync --locked --extra dev
@@ -12,6 +21,8 @@ uv run --locked python scripts/preview_web_assistant.py
 ```
 
 Open http://127.0.0.1:8016/preview. This existing preview uses synthetic sample data, in-memory storage and **fake assistant replies**. It does not call an AI provider, save persistent tasks, send messages, access a calendar or provide working voice. Restarting it clears its data. This gives you a working interface to inspect and extend during the workshop.
+
+Keep the terminal running; a quiet terminal is normal. In the browser, type `Help me plan my day.` and click **Send**. A successful setup replies that this is a local interface preview using a fake assistant. Voice controls are disabled in this preview. Stop the server with **Ctrl+C**; rerun the preview command to start it again. If port 8016 is already in use, stop your earlier preview first. If your session expires, open `/preview` again; restart the server if it has been running for more than four hours.
 
 Without uv:
 
@@ -23,6 +34,8 @@ python scripts/preview_web_assistant.py
 ```
 
 On Windows, activate with `.venv\Scripts\Activate.ps1`. The uv commands work without activation.
+
+The pip alternative resolves dependencies when you install; it does not use `uv.lock`. Use uv for consistent workshop dependencies.
 
 ## Extend the baseline
 
@@ -55,10 +68,14 @@ Open http://127.0.0.1:8016/app. **This is the real runtime and can change your c
 
 ## Verify
 
+Run these in a second terminal from the repository folder while the preview is running, or stop the preview first. Node.js is needed only for the JavaScript checks, not to run the preview.
+
 ```bash
 uv run --locked pytest -q
 node --test tests/*.cjs
 ```
+
+If you used the pip setup, run `python -m pytest -q` from the activated environment instead of `uv run --locked pytest -q`.
 
 The test suite uses mock providers and synthetic records; never send messages to fixture phone numbers or email addresses. Public URL strings in the QR golden tests are fixed inputs for independently generated matrices, not network requests.
 
